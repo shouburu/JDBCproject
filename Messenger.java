@@ -23,6 +23,16 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Arrays;
+import java.io.Console;
+import java.text.*;
+import java.io.*;
+import java.util.*;
+import java.text.ParseException;
+
 
 /**
  * This class defines a simple embedded SQL utility class that is designed to
@@ -400,6 +410,41 @@ public class Messenger {
       // Your code goes here.
       // ...
       // ...
+      try{
+          //Prompt for message input
+          System.out.println("Say whats on your mind... \n");
+          System.out.println("(300 char limit) \n");
+
+          Console console = System.console();
+          String user_input = console.readLine("<(^^)>");
+
+          //System.out.println(user_input);
+
+          //ask about timestamp from user
+          SimpleDateFormat format = new SimpleDateFormat("MM-dd-yyyy");
+          System.out.print("Enter timestamp (MM-dd-yyyy including dashes): ");
+          String dtime = in.readLine();
+
+          java.util.Date date = format.parse(dtime); //change this to user input and further modify parser to allow easier UI
+          java.sql.Timestamp timestamp = new java.sql.Timestamp(date.getTime());
+
+          //Add message to database under msg_text (later will update with specific user information as well)
+          String query = String.format("INSERT INTO MESSAGE (msg_text, msg_timestamp) VALUES ('%s', '%tD')", user_input, timestamp);
+
+          esql.executeUpdate(query);
+          System.out.println("Message sent.");
+
+          //TEST WHETHER MESSAGE PROPERLY SENT
+          /*
+          String test_query = String.format("SELECT M.msg_text FROM MESSAGE M");
+          esql.executeQueryAndPrintResult(test_query);
+          */
+
+      }catch(Exception e){
+         System.err.println (e.getMessage ());
+      }
+      //send message to designated user
+      
    }//end 
 
    public static void ReadNotifications(Messenger esql){
