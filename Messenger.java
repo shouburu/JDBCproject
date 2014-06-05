@@ -401,7 +401,7 @@ public class Messenger {
 
           esql.executeUpdate(query);
       }catch(Exception e){
-         System.err.println (e.getMessage ());
+         System.err.println (e.getMessage());
          return;
       }
    }//end 
@@ -410,9 +410,23 @@ public class Messenger {
       // Your code goes here.
       // ...
       // ...
+
+      // MESSAGE SETUP:::::::::::::::::::::::::::;;
       try{
+          // OVERHEAD::::::::::::::::::::::::::
+          //1) Serialize message
+          int s = Serializer(esql, "MESSAGE", "msg_id");
+          //2) Who to send it to?
+          System.out.print("Recipient Name? \n");
+          String recipient = in.readLine();
+          //System.out.println(recipient);
+            //Update the notification for that user or call function that sends message (which will then update notification)
+          //3) Chat to add message to
+
+          // OVERHEAD::::::::::::::::::::::::::
+      
           //Prompt for message input
-          System.out.println("Say whats on your mind... \n");
+          System.out.println("Say whats on your mind " + uname + ".\n");
           System.out.println("(300 char limit) \n");
 
           Console console = System.console();
@@ -420,32 +434,82 @@ public class Messenger {
 
           //System.out.println(user_input);
 
-          //ask about timestamp from user
-          SimpleDateFormat format = new SimpleDateFormat("MM-dd-yyyy");
-          System.out.print("Enter timestamp (MM-dd-yyyy including dashes): ");
-          String dtime = in.readLine();
+          //set timestamp to current time 
+          Date date = new Date();
+          SimpleDateFormat df = new SimpleDateFormat("MM/dd/yyyy h:mm:ss a");
+          String timestamp = df.format(date);
+          //System.out.println(timestamp); // 12/01/2011 4:48:16 PM
 
-          java.util.Date date = format.parse(dtime); //change this to user input and further modify parser to allow easier UI
-          java.sql.Timestamp timestamp = new java.sql.Timestamp(date.getTime());
+          Date dtime = null;
+          //ask about destruct timestamp from user
+          System.out.print("Would you like to setup a self destruct for this message? (y/n) ");
+          String ans = in.readLine();
+          //System.out.println(ans);
 
-          //Add message to database under msg_text (later will update with specific user information as well)
-          String query = String.format("INSERT INTO MESSAGE (msg_text, msg_timestamp) VALUES ('%s', '%tD')", user_input, timestamp);
+          if(ans.equals("y") || ans.equals("yes") || ans.equals("Y")){
+              System.out.print("When should your message be deleted? (MM/dd/yyyy h:mm:ss a (\"a\" stands for am or pm)): ");
+              String temp = in.readLine();
+              System.out.println(temp);
+              try{
+                  dtime = df.parse(temp);
+              } catch(ParseException e) {
+                System.out.println("Please use the proper format for the destruction date. Try Again!");
+              }
+          }
 
+          String dtimestamp = df.format(dtime); 
+          String query;
+
+          System.out.println("dtime " + dtimestamp);
+          System.out.println("timestamp " + timestamp);
+
+          if(dtimestamp != null){
+              //Add message to database under msg_text (later will update with specific user information as well)
+              String beta_query = "INSERT INTO MESSAGE (serial, msg_text, sender_login, msg_timestamp, destr_timestamp) VALUES ('%s', '%s', '" + timestamp + "' '" + dtimestamp + "')";
+              query = String.format(beta_query, s, user_input, uname);
+          }
+          else{
+              String beta_query = "INSERT INTO MESSAGE (serial, msg_text, sender_login, msg_timestamp) VALUES ('%s', '%s', '" + timestamp + "')";
+              query = String.format(beta_query, s, user_input, uname);
+          }
           esql.executeUpdate(query);
           System.out.println("Message sent.");
 
           //TEST WHETHER MESSAGE PROPERLY SENT
           /*
-          String test_query = String.format("SELECT M.msg_text FROM MESSAGE M");
+          String test_query = String.format("SELECT M.msg_text, M.msg_timestamp FROM MESSAGE M, USR U WHERE U.login = %s", uname);
           esql.executeQueryAndPrintResult(test_query);
           */
 
       }catch(Exception e){
          System.err.println (e.getMessage ());
       }
-      //send message to designated user
+      // MESSAGE SETUP:::::::::::::::::::::::::::;;
       
    }//end 
+
+
+
+   public static void EditMessage(Messenger esql, int message_id){
+     //Allow edit of message by pulling message by id
+   }//end
+
+   public static int Serializer(Messenger esql, String table_name, String attr){
+       try{
+            String query = "SELECT MAX(TN."+ attr +") FROM " + table_name + " TN";
+            List<List<String>> clist = esql.executeQueryAndReturnResult(query);
+            int num = Integer.parseInt(clist.get(0).get(0));
+            int serial = num + 1;
+            return serial;
+       } catch(Exception e){
+            System.err.println (e.getMessage ());
+            return -1;
+       }
+   }
+
+   public static void DeleteMessage(Messenger esql){
+   
+   }
 
    public static void ReadNotifications(Messenger esql){
       // Your code goes here.
