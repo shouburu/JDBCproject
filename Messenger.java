@@ -337,18 +337,25 @@ public class Messenger {
 
    public static void AddToContact(Messenger esql){
      try{
+          //Grab the username of the person to be adeed, then get the block_list and contact_list from current user
           System.out.print("\tEnter their username: ");
-          String contactname = in.readLine();
-          String query1 = String.format("SELECT contact_list FROM Usr WHERE login = '%s'", uname);
-
-          List<List<String>> clist = esql.executeQueryAndReturnResult(query1);
+            String contactname = in.readLine();
+            String query1 = String.format("SELECT contact_list, block_list FROM Usr WHERE login = '%s'", uname);
+            List<List<String>> clist = esql.executeQueryAndReturnResult(query1);
+            String usercontactlist = clist.get(0).get(0);
+            String userblocklist = clist.get(0).get(1);
           
-          String query2 = String.format("INSERT INTO USER_LIST_CONTAINS (list_id, list_member ) VALUES (%s,'%s')", clist.get(0).get(0), contactname);
-          //System.out.print("\n" + query2 + "\n");
-          esql.executeUpdate(query2);
-          System.out.println("\tAdded to your contacts!");
-          return;
-          
+          //If the username to be added is in the block list, remove it
+          String query = String.format("SELECT * FROM USER_LIST_CONTAINS ULC WHERE %s = ULC.list_id AND ULC.list_member='%s'", userblocklist, contactname );
+          int userNum = esql.executeQuery(query);
+          if( userNum > 0 ) {
+            String query3 = String.format("DELETE FROM USER_LIST_CONTAINS WHERE list_id = '%s' AND list_member = '%s'", userblocklist,  contactname);
+            esql.executeUpdate(query3);
+          }
+          //Update Contacts
+          String query2 = String.format("INSERT INTO USER_LIST_CONTAINS (list_id, list_member ) VALUES (%s,'%s')", usercontactlist, contactname);
+            esql.executeUpdate(query2);
+        return;
     }catch(Exception e){
          System.err.println (e.getMessage ());
          return;
@@ -358,19 +365,43 @@ public class Messenger {
 
    public static void ListContacts(Messenger esql){
      try{
+          //Grab contact_list from current user, then grab the contact list and status of the users in that list
           String query1 = String.format("SELECT contact_list FROM Usr WHERE login = '%s'", uname);
-          List<List<String>> clist = esql.executeQueryAndReturnResult(query1);
-          String query2 = String.format("SELECT L.list_member, U.status FROM USER_LIST_CONTAINS L, USR U WHERE L.list_id = %s AND L.list_member = U.login", clist.get(0).get(0) );
-          List<List<String>> clist2 = esql.executeQueryAndReturnResult(query2);
-
+            List<List<String>> clist = esql.executeQueryAndReturnResult(query1);
+            String query2 = String.format("SELECT L.list_member, U.status FROM USER_LIST_CONTAINS L, USR U WHERE L.list_id = %s AND L.list_member = U.login", clist.get(0).get(0) );
+            List<List<String>> clist2 = esql.executeQueryAndReturnResult(query2);
           
-          
+          //Print out all the contacts
           for( int i = 0; i < clist2.size(); i++ ) {
             for( int j = 0; j < clist2.get(i).size(); j++ ) {
               System.out.print( clist2.get(i).get(j) + "\t");
             }
             System.out.println();
           }
+          return;
+    } catch(Exception e){
+         System.err.println (e.getMessage ());
+         return;
+      }
+   }
+   
+    public static void ListBlockedContacts(Messenger esql){
+     try{
+          
+          //Grab block_list from current user, then grab the block list
+          String query1 = String.format("SELECT block_list FROM Usr WHERE login = '%s'", uname);
+          List<List<String>> clist = esql.executeQueryAndReturnResult(query1);
+          String query2 = String.format("SELECT L.list_member FROM USER_LIST_CONTAINS L WHERE L.list_id = %s", clist.get(0).get(0) );
+          List<List<String>> clist2 = esql.executeQueryAndReturnResult(query2);
+          
+          //Print out list of blocked users
+          for( int i = 0; i < clist2.size(); i++ ) {
+            for( int j = 0; j < clist2.get(i).size(); j++ ) {
+              System.out.print("\t"+ clist2.get(i).get(j));
+            }
+            System.out.println();
+          }
+          System.out.println();
           return;
           
     }catch(Exception e){
@@ -381,6 +412,7 @@ public class Messenger {
    
     public static void UpdateStatus(Messenger esql){
       try{
+          //Grab status and update current status
           System.out.println("\tEnter your status(140 characters): ");
           String status = in.readLine();
           String query = String.format("UPDATE USR SET status='%s' WHERE login = '%s'", status, uname);
@@ -393,6 +425,7 @@ public class Messenger {
    
     public static void DeleteContact(Messenger esql){
       try{
+          //Grabs contact name to be deleted, and deletes from the USER_LIST_CONTAINS table where currentuser.contact_list=UserListContaints.list_id
           System.out.println("\tEnter contact name to be deleted: ");
           String delname = in.readLine();
           String query1 = String.format("SELECT contact_list FROM Usr WHERE login = '%s'", uname);
@@ -401,7 +434,7 @@ public class Messenger {
 
           esql.executeUpdate(query);
       }catch(Exception e){
-         System.err.println (e.getMessage());
+         System.err.println (e.getMessage ());
          return;
       }
    }//end 
@@ -487,6 +520,34 @@ public class Messenger {
       // MESSAGE SETUP:::::::::::::::::::::::::::;;
       
    }//end 
+   
+   public static void BlockContact(Messenger esql){
+     try{
+          //Grab the username of the person to be blocked, then get the block_list and contact_list from current user
+          System.out.print("\tEnter their username: ");
+            String contactname = in.readLine();
+            String query1 = String.format("SELECT block_list, contact_list FROM Usr WHERE login = '%s'", uname);
+            List<List<String>> clist = esql.executeQueryAndReturnResult(query1);
+              String userblocklist = clist.get(0).get(0);
+              String usercontactlist = clist.get(0).get(1);
+          
+        //If the username to be blocked is in the conact, remove it
+        String query = String.format("SELECT * FROM USER_LIST_CONTAINS ULC WHERE %s = ULC.list_id AND ULC.list_member='%s'", usercontactlist, contactname );
+        int userNum = esql.executeQuery(query);
+        if( userNum > 0 ) {
+          String query3 = String.format("DELETE FROM USER_LIST_CONTAINS WHERE list_id = '%s' AND list_member = '%s'", usercontactlist,  contactname);
+          esql.executeUpdate(query3);
+        }
+          //Update the blocked list
+          String query4 = String.format("INSERT INTO USER_LIST_CONTAINS (list_id, list_member ) VALUES (%s,'%s')", userblocklist, contactname);
+            esql.executeUpdate(query4);
+          return;
+          
+    }catch(Exception e){
+         System.err.println (e.getMessage ());
+         return;
+      }
+    }
 
 
 
